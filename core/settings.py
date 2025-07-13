@@ -293,7 +293,7 @@ CELERY_BEAT_SCHEDULE = {
 # SOLANA CONFIGURATION
 # ============================================================================
 
-SOLANA_RPC_URL = 'https://api.devnet.solana.com'
+SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com'
 SOLANA_PROGRAM_ID = '2wqFWNXDYT2Q71ToNFBqKpV4scKSi1cjMuqVcT2jgruV'
 SOLANA_COMMITMENT = 'confirmed'
 SOLANA_ADMIN_PUBLIC_KEY = '2CSmvU5PVMpQ2B4RPSWhYgrmNAsVtiiaxQhERHWHUnBC'

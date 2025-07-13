@@ -1,10 +1,18 @@
+# Django & base
 Django>=4.2
-gunicorn
 djangorestframework
-psycopg2-binary
-Pillow
+gunicorn
+
+# Authentification / Sécurité
 bcrypt
 PyJWT
+
+# Tâches asynchrones
+celery
+django_celery_results
+redis
+
+# Utilitaires
 requests
 PyYAML
 attrs

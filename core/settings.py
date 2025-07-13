@@ -209,7 +209,6 @@ SIMPLE_JWT = {
 # ============================================================================
 # CORS CONFIGURATION
 # ============================================================================
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -217,7 +216,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://powerball.asitechsolution.com",
     "https://david-lac-mu.vercel.app",
+    "https://david-git-main-emmanuel-agbotoedos-projects.vercel.app",  # 👈 Ajoute ceci
 ]
+
 
 CORS_ALLOW_CREDENTIALS = True
 

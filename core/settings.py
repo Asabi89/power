@@ -9,20 +9,19 @@ from pathlib import Path
 from datetime import timedelta
 import sys
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# =========================================================================
+# ============================================================================
 # SECURITY SETTINGS
-# =========================================================================
+# ============================================================================
 
 SECRET_KEY = 'django-insecure-pyrjl6w523v7mvo!^(wa%=@gf0t2*ysh4a+!s7*$zj=eplntnn'
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ['*']
 
-# =========================================================================
+# ============================================================================
 # APPLICATION DEFINITION
-# =========================================================================
+# ============================================================================
 
 DJANGO_APPS = [
     'jazzmin',
@@ -56,9 +55,9 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 AUTH_USER_MODEL = 'base.User'
 
-# =========================================================================
-# MIDDLEWARE
-# =========================================================================
+# ============================================================================
+# MIDDLEWARE CONFIGURATION
+# ============================================================================
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -71,7 +70,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# ============================================================================
+# URL CONFIGURATION
+# ============================================================================
+
 ROOT_URLCONF = 'core.urls'
+
+# ============================================================================
+# TEMPLATES CONFIGURATION
+# ============================================================================
 
 TEMPLATES = [
     {
@@ -91,24 +98,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# =========================================================================
-# DATABASES
-# =========================================================================
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'powerball_db',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
     }
 }
 
-# =========================================================================
-# AUTH PASSWORD VALIDATION
-# =========================================================================
+# ============================================================================
+# PASSWORD VALIDATION
+# ============================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -117,38 +124,37 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# =========================================================================
+# ============================================================================
 # INTERNATIONALIZATION
-# =========================================================================
+# ============================================================================
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/New_York'
 USE_I18N = True
 USE_TZ = True
 
-# =========================================================================
-# STATIC & MEDIA
-# =========================================================================
+# ============================================================================
+# STATIC & MEDIA FILES CONFIGURATION
+# ============================================================================
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# =========================================================================
+# ============================================================================
 # REST FRAMEWORK CONFIGURATION
-# =========================================================================
+# ============================================================================
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
@@ -177,46 +183,142 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
 }
 
+# ============================================================================
+# JWT CONFIGURATION
+# ============================================================================
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+    'JTI_CLAIM': 'jti',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
+# ============================================================================
+# CORS CONFIGURATION
+# ============================================================================
+
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://powerball.asitechsolution.com',
-    'https://david-lac-mu.vercel.app',
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://powerball.asitechsolution.com",
+    "https://david-lac-mu.vercel.app",
 ]
+
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_HEADERS = [
-    'accept', 'accept-encoding', 'authorization', 'content-type', 'dnt', 'origin',
-    'user-agent', 'x-csrftoken', 'x-requested-with',
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
-# =========================================================================
-# CELERY
-# =========================================================================
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+# ============================================================================
+# CACHE CONFIGURATION
+# ============================================================================
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+CACHE_TTL = {
+    'DASHBOARD': 30,
+    'LOTTERY_STATE': 60,
+    'TOKEN_BALANCES': 300,
+    'STATS': 600,
+}
+
+# ============================================================================
+# CELERY CONFIGURATION
+# ============================================================================
+
+CELERY_BROKER_URL = 'django-db'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
-# =========================================================================
-# LOGGING
-# =========================================================================
+CELERY_BEAT_SCHEDULE = {
+    'hourly-lottery-check': {
+        'task': 'base.tasks.check_hourly_lottery',
+        'schedule': 60.0,
+    },
+    'daily-lottery-check': {
+        'task': 'base.tasks.check_daily_lottery',
+        'schedule': 300.0,
+    },
+    'update-token-balances': {
+        'task': 'base.tasks.update_all_token_balances',
+        'schedule': 600.0,
+    },
+    'sync-transactions': {
+        'task': 'base.tasks.sync_recent_transactions',
+        'schedule': 120.0,
+    },
+    'update-jackpot-pools': {
+        'task': 'base.tasks.update_jackpot_pools',
+        'schedule': 30.0,
+    },
+}
+
+# ============================================================================
+# SOLANA CONFIGURATION
+# ============================================================================
+
+SOLANA_RPC_URL = 'https://api.devnet.solana.com'
+SOLANA_PROGRAM_ID = '2wqFWNXDYT2Q71ToNFBqKpV4scKSi1cjMuqVcT2jgruV'
+SOLANA_COMMITMENT = 'confirmed'
+SOLANA_ADMIN_PUBLIC_KEY = '2CSmvU5PVMpQ2B4RPSWhYgrmNAsVtiiaxQhERHWHUnBC'
+SOLANA_ADMIN_PRIVATE_KEY = '[126,22,24,159,87,113,211,58,127,27,44,86,232,214,211,165,115,168,193,115,116,46,11,215,9,25,73,106,132,165,131,45,223,77,209,89,87,22,196,70,196,222,197,81,53,243,28,63,234,70,137,82,169,123,98,247,128,57,169,228,101,48,66,58]'
+BALL_TOKEN_MINT = '7gRCovtjCRPPHRdz22BTZX2WrjJSe9CgMxxfDshjemx9'
+
+# ============================================================================
+# LOTTERY CONFIGURATION
+# ============================================================================
+
+LOTTERY_CONFIG = {
+    "HOURLY_JACKPOT_PERCENTAGE": 10,
+    "DAILY_JACKPOT_PERCENTAGE": 5,
+    "MIN_TICKETS_FOR_ELIGIBILITY": 1,
+    "TICKETS_PER_10K_BALL": 1,
+    "HOURLY_DRAW_INTERVAL": 3600,
+    "DAILY_DRAW_INTERVAL": 86400,
+}
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
 
@@ -224,32 +326,96 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+        'verbose': {'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}', 'style': '{'},
+        'simple': {'format': '{levelname} {message}', 'style': '{'},
+        'detailed': {
+            'format': '[{asctime}] {levelname} {name} {module}.{funcName}:{lineno} - {message}',
             'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'handlers': {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(LOGS_DIR / 'app.log'),
-            'maxBytes': 1024*1024*10,
-            'backupCount': 5,
+            'filename': str(LOGS_DIR / 'lottery.log'),
+            'maxBytes': 1024 * 1024 * 15,
+            'backupCount': 10,
             'formatter': 'verbose',
         },
         'console': {
-            'level': 'DEBUG',
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOGS_DIR / 'error.log'),
+            'maxBytes': 1024 * 1024 * 15,
+            'backupCount': 10,
+            'formatter': 'detailed',
         },
     },
     'root': {
         'level': 'INFO',
-        'handlers': ['console', 'file'],
+        'handlers': ['console'],
+    },
+    'loggers': {
+        'django': {'handlers': ['console', 'file'], 'level': 'INFO', 'propagate': False},
+        'base': {'handlers': ['console', 'file', 'error_file'], 'level': 'INFO', 'propagate': False},
+        'solana': {'handlers': ['console', 'file', 'error_file'], 'level': 'DEBUG' if DEBUG else 'INFO', 'propagate': False},
+        'celery': {'handlers': ['console', 'file'], 'level': 'INFO', 'propagate': False},
+        'rest_framework': {'handlers': ['console', 'file'], 'level': 'DEBUG' if DEBUG else 'INFO', 'propagate': False},
     },
 }
+
+# ============================================================================
+# HEALTH CHECK CONFIGURATION
+# ============================================================================
+
+HEALTH_CHECK = {
+    'DISK_USAGE_MAX': 90,
+    'MEMORY_MIN': 100,
+}
+
+API_RATE_LIMIT = {
+    'BURST': 60,
+    'SUSTAINED': 1000,
+    'WINDOW': 3600,
+}
+
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+
+SESSION_COOKIE_AGE = 86400
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# ============================================================================
+# DEVELOPMENT SETTINGS
+# ============================================================================
+
+if DEBUG:
+    try:
+        import debug_toolbar
+        INSTALLED_APPS.append('debug_toolbar')
+        MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+        DEBUG_TOOLBAR_CONFIG = {'SHOW_TOOLBAR_CALLBACK': lambda request: True}
+        INTERNAL_IPS = ['127.0.0.1', 'localhost']
+    except ImportError:
+        pass
+
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    CACHES['default']['BACKEND'] = 'django.core.cache.backends.dummy.DummyCache'
+
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+
+# ============================================================================
+# FINAL
+# ============================================================================
+
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)

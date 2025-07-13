@@ -95,6 +95,8 @@ class UserViewSet(viewsets.ModelViewSet):
         
         return Response({'success': 'Portefeuille connecté avec succès'})
 
+
+
 class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet pour les détentions de tokens (sans authentification)"""
     queryset = TokenHolding.objects.all()
@@ -115,29 +117,39 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def my_holdings(self, request):
-        """Holdings via wallet_address fourni"""
         wallet_address = request.query_params.get('wallet_address')
+
         if not wallet_address:
             return Response({'error': 'wallet_address requis'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             holding = TokenHolding.objects.get(wallet_address=wallet_address)
-            serializer = self.get_serializer(holding)
-            return Response(serializer.data)
         except TokenHolding.DoesNotExist:
-            return Response({
-                'wallet_address': wallet_address,
-                'balance': '0.00000000',
-                'tickets_count': 0,
-                'is_eligible': False,
-                'last_updated': None
-            })
+            # Si non trouvé → sync immédiate
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                holding = loop.run_until_complete(solana_service.sync_participant(wallet_address))
+            finally:
+                loop.close()
+
+            if not holding:
+                return Response({
+                    'wallet_address': wallet_address,
+                    'balance': '0.00000000',
+                    'tickets_count': 0,
+                    'is_eligible': False,
+                    'last_updated': None
+                })
+
+        serializer = self.get_serializer(holding)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
     def sync_wallet(self, request):
         """Synchronise un wallet spécifique avec Solana"""
         wallet_address = request.data.get('wallet_address')
-        
+
         if not wallet_address:
             return Response({'error': 'Adresse de wallet requise'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -149,7 +161,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
 
             if result:
                 serializer = self.get_serializer(result)
-                
+
                 # Log de l'action
                 AuditLog.objects.create(
                     action_type='wallet_synced',
@@ -163,7 +175,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                         'is_eligible': result.is_eligible
                     }
                 )
-                
+
                 return Response(serializer.data)
             else:
                 return Response({'error': 'Impossible de synchroniser ce wallet'}, status=status.HTTP_404_NOT_FOUND)
@@ -178,14 +190,14 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
         try:
             # ✅ Vérification robuste de Celery
             celery_status = self._check_celery_status()
-            
+
             if celery_status['available']:
                 # Utiliser Celery
                 from .tasks import sync_participant_holdings
-                
+
                 try:
                     task = sync_participant_holdings.delay()
-                    
+
                     # Log de l'action
                     AuditLog.objects.create(
                         action_type='bulk_sync_triggered',
@@ -194,7 +206,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                         ip_address=request.META.get('REMOTE_ADDR'),
                         metadata={'task_id': task.id, 'mode': 'celery'}
                     )
-                    
+
                     return Response({
                         'success': 'Synchronisation déclenchée (asynchrone)',
                         'task_id': task.id,
@@ -202,7 +214,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                         'estimated_duration': '2-5 minutes',
                         'workers_active': celery_status['workers_count']
                     })
-                    
+
                 except Exception as celery_error:
                     logger.error(f"Celery task failed: {celery_error}")
                     # Fallback vers synchrone
@@ -210,14 +222,14 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
             else:
                 # Fallback synchrone
                 return self._sync_participants_synchronously(request, celery_status['reason'])
-                
+
         except Exception as e:
             logger.error(f"Error in sync_all: {e}")
             return Response(
                 {
                     'error': f'Erreur lors de la synchronisation: {str(e)}',
                     'suggestion': 'Vérifiez que Redis et Celery sont démarrés'
-                }, 
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -225,22 +237,22 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
         """Vérification complète du statut Celery"""
         try:
             from celery import current_app
-            
+
             # Vérifier la connexion au broker
             inspect = current_app.control.inspect()
-            
+
             # Timeout court pour éviter les blocages
             active_workers = inspect.active()
-            
+
             if not active_workers:
                 return {
                     'available': False,
                     'reason': 'Aucun worker Celery actif',
                     'workers_count': 0
                 }
-            
+
             workers_count = len(active_workers)
-            
+
             # Vérifier que les workers répondent
             stats = inspect.stats()
             if not stats:
@@ -249,13 +261,13 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                     'reason': 'Workers Celery ne répondent pas',
                     'workers_count': 0
                 }
-            
+
             return {
                 'available': True,
                 'reason': 'Celery opérationnel',
                 'workers_count': workers_count
             }
-            
+
         except Exception as e:
             return {
                 'available': False,
@@ -266,19 +278,19 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
     def _sync_participants_synchronously(self, request, reason):
         """Synchronisation synchrone en fallback"""
         logger.warning(f"Fallback to synchronous sync: {reason}")
-        
+
         from .solana_service import solana_service
         import asyncio
         from django.utils import timezone
         from datetime import timedelta
-        
+
         try:
             # Limiter à 15 wallets pour éviter les timeouts
             stale_wallets = TokenHolding.objects.filter(
                 is_eligible=True,
                 last_updated__lt=timezone.now() - timedelta(minutes=30)
             ).order_by('-tickets_count')[:15]
-            
+
             if not stale_wallets.exists():
                 return Response({
                     'success': 'Aucun wallet à synchroniser',
@@ -287,13 +299,13 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                     'mode': 'synchronous',
                     'reason': reason
                 })
-            
+
             synced_count = 0
             errors = []
-            
+
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
+
             try:
                 for holding in stale_wallets:
                     try:
@@ -310,7 +322,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                         continue
             finally:
                 loop.close()
-            
+
             # Log de l'action
             AuditLog.objects.create(
                 action_type='bulk_sync_completed',
@@ -325,7 +337,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                     'reason': reason
                 }
             )
-            
+
             return Response({
                 'success': f'Synchronisation terminée (synchrone)',
                 'synced_count': synced_count,
@@ -336,7 +348,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                 'reason': reason,
                 'note': 'Synchronisation limitée à 15 wallets en mode synchrone'
             })
-            
+
         except Exception as e:
             logger.error(f"Synchronous sync failed: {e}")
             return Response(
@@ -344,7 +356,7 @@ class TokenHoldingViewSet(viewsets.ReadOnlyModelViewSet):
                     'error': f'Erreur lors de la synchronisation synchrone: {str(e)}',
                     'mode': 'synchronous',
                     'reason': reason
-                }, 
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

@@ -262,8 +262,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://powerball.asitechsolution.com",  # 🔥 Domaine ajouté pour la prod
-]
+    "https://powerball.asitechsolution.com",
+    "https://david-lac-mu.vercel.app",
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -484,49 +484,7 @@ HEALTH_CHECK = {
     'MEMORY_MIN': 100,    # in MB
 }
 
-# ============================================================================
-# EMAIL CONFIGURATION
-# ============================================================================
 
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'localhost')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@lottery-solana.com')
-
-# ============================================================================
-# SECURITY SETTINGS (Production)
-# ============================================================================
-
-if not DEBUG:
-    # HTTPS Settings
-    SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    
-    # HSTS Settings
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    
-    # Cookie Settings
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    CSRF_COOKIE_HTTPONLY = True
-    
-    # Content Security
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_BROWSER_XSS_FILTER = True
-    X_FRAME_OPTIONS = 'DENY'
-    
-    # Referrer Policy
-    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-
-# ============================================================================
-# CUSTOM SETTINGS
-# ============================================================================
 
 # API Rate Limiting
 API_RATE_LIMIT = {
@@ -577,23 +535,7 @@ if DEBUG:
 # TESTING SETTINGS
 # ============================================================================
 
-if 'test' in sys.argv or 'pytest' in sys.modules:
-    # Use in-memory database for tests
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
-    }
-    
-    # Disable migrations for faster tests
-    class DisableMigrations:
-        def __contains__(self, item):
-            return True
-        
-        def __getitem__(self, item):
-            return None
-    
-    MIGRATION_MODULES = DisableMigrations()
-    
+
     # Use dummy cache for tests
     CACHES['default']['BACKEND'] = 'django.core.cache.backends.dummy.DummyCache'
     
@@ -606,68 +548,16 @@ if 'test' in sys.argv or 'pytest' in sys.modules:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
 
-# ============================================================================
-# ENVIRONMENT SPECIFIC OVERRIDES
-# ============================================================================
-
-# Load environment-specific settings
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
-
-if ENVIRONMENT == 'production':
-    try:
-        from .settings_production import *
-    except ImportError:
-        pass
-elif ENVIRONMENT == 'staging':
-    try:
-        from .settings_staging import *
-    except ImportError:
-        pass
-elif ENVIRONMENT == 'testing':
-    try:
-        from .settings_testing import *
-    except ImportError:
-        pass
 
 # ============================================================================
 # FINAL IMPORTS AND VALIDATIONS
 # ============================================================================
 
-import sys
-
-# Validate required environment variables in production
-if not DEBUG:
-    required_env_vars = [
-        'SECRET_KEY',
-        'SOLANA_ADMIN_PRIVATE_KEY',
-        'BALL_TOKEN_MINT',
-    ]
-    
-    missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-    if missing_vars:
-        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-
 # Ensure logs directory exists
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
-# Print configuration summary in debug mode
-if DEBUG:
-    print("=" * 50)
-    print("LOTTERY SOLANA - CONFIGURATION SUMMARY")
-    print("=" * 50)
-    print(f"Environment: {ENVIRONMENT}")
-    print(f"Debug Mode: {DEBUG}")
-    print(f"Database: {DATABASES['default']['ENGINE']}")
-    print(f"Cache Backend: {CACHES['default']['BACKEND']}")
-    print(f"Solana RPC: {SOLANA_RPC_URL}")
-    print(f"Solana Program ID: {SOLANA_PROGRAM_ID}")
-    print(f"Celery Broker: {CELERY_BROKER_URL}")
-    print("=" * 50)
 
 
-
-# 🔹 PRODUCTION: Configuration des tâches périodiques
-# À ajouter dans settings.py ou celery.py :
 """
 CELERY_BEAT_SCHEDULE = {
     'sync-lottery-state': {

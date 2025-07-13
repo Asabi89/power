@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class SolanaService:
     def __init__(self):
         # 🔹 PRODUCTION: Utiliser mainnet-beta au lieu de devnet
-        self.rpc_url = getattr(settings, 'SOLANA_RPC_URL', 'https://api.devnet.solana.com')
+        self.rpc_url = getattr(settings, 'SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com')
         self.program_id = Pubkey.from_string(getattr(settings, 'SOLANA_PROGRAM_ID', '2wqFWNXDYT2Q71ToNFBqKpV4scKSi1cjMuqVcT2jgruV'))
         self.commitment = Commitment(getattr(settings, 'SOLANA_COMMITMENT', 'confirmed'))
         self.admin_keypair: Optional[Keypair] = None
